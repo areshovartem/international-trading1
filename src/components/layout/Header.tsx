@@ -1,0 +1,241 @@
+import { NavLink } from "react-router-dom"
+import { PhoneCall, Send, Menu, X } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
+
+import logo from "../../assets/logo.png"
+
+const linkBase =
+  "text-sm font-medium tracking-wide transition-colors hover:text-brand-light/90"
+const linkActive = "text-brand-light"
+
+export default function Header() {
+  const headerRef = useRef<HTMLElement | null>(null)
+  const [h, setH] = useState(0)
+  const [open, setOpen] = useState(false)
+
+  useLayoutEffect(() => {
+    const el = headerRef.current
+    if (!el) return
+
+    const update = () => setH(el.getBoundingClientRect().height)
+    update()
+
+    const ro = new ResizeObserver(update)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  // Esc + lock scroll
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false)
+    }
+    window.addEventListener("keydown", onKeyDown)
+
+    const prev = document.body.style.overflow
+    if (open) document.body.style.overflow = "hidden"
+    else document.body.style.overflow = prev || ""
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown)
+      document.body.style.overflow = prev
+    }
+  }, [open])
+
+  const nav = [
+    { to: "/", label: "Главная" },
+    { to: "/catalog", label: "Каталог" },
+    { to: "/contacts", label: "Контакты" },
+    { to: "/about", label: "О компании" },
+    { to: "/calculator", label: "Калькулятор" },
+  ]
+
+  return (
+    <>
+      {/* spacer чтобы контент НЕ прыгал */}
+      <div style={{ height: h }} />
+
+      <motion.header
+        ref={headerRef}
+        initial={{ y: -90, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{
+          duration: 0.6,
+          ease: [0.22, 1, 0.36, 1],
+          delay: 0.05,
+        }}
+        style={{ willChange: "transform" }}
+        className="fixed left-0 right-0 top-0 z-50 border-b border-white/10 bg-brand-dark/70 backdrop-blur"
+      >
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 lg:py-4">
+          {/* LOGO */}
+          <NavLink
+            to="/"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 rounded-xl transition hover:opacity-90"
+          >
+            <img
+              src={logo}
+              alt="International Trading"
+              className="h-12 w-12 lg:h-16 lg:w-16 object-contain"
+              draggable={false}
+            />
+
+            <div className="leading-tight">
+              <div className="text-sm font-semibold uppercase tracking-[0.2em] text-white/90">
+                INTERNATIONAL
+              </div>
+              <div className="text-xs uppercase tracking-[0.25em] text-white/60">
+                TRADING
+              </div>
+            </div>
+          </NavLink>
+
+          {/* DESKTOP NAV: включаем только с lg */}
+          <nav className="hidden items-center gap-6 lg:flex">
+            {nav.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `${linkBase} ${isActive ? linkActive : "text-white/75"}`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          {/* RIGHT */}
+          <div className="flex items-center gap-2 lg:gap-3">
+            {/* desktop phone только с lg */}
+            <a
+              href="tel:+79181606585"
+              className="
+                hidden lg:flex items-center gap-2
+                rounded-lg border border-white/10 bg-white/5
+                px-3 py-1.5 text-xs
+                text-white/90 transition hover:bg-white/10
+                xl:px-4 xl:py-2 xl:text-sm xl:rounded-xl
+              "
+            >
+
+              <PhoneCall size={16} />
+              +7 (918) 160-65-85
+            </a>
+
+            {/* desktop telegram только с lg */}
+            <a
+                href="https://t.me/International_trading_rus"
+                target="_blank"
+                rel="noreferrer"
+                className="
+                  hidden lg:inline-flex items-center gap-2
+                  rounded-lg bg-gradient-to-r from-brand-blue to-brand-accent
+                  px-3 py-1.5 text-xs font-semibold
+                  text-white shadow-lg shadow-brand-accent/20
+                  transition hover:opacity-95
+                  xl:px-4 xl:py-2 xl:text-sm xl:rounded-xl
+                "
+              >
+
+              <Send size={16} />
+              Telegram
+            </a>
+
+            {/* burger: показываем до lg */}
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/90 transition hover:bg-white/10"
+              aria-label="Открыть меню"
+            >
+              <Menu size={18} />
+            </button>
+          </div>
+        </div>
+      </motion.header>
+
+      {/* MOBILE MENU */}
+      <AnimatePresence>
+        {open && (
+          <>
+            {/* overlay */}
+            <motion.button
+              type="button"
+              aria-label="Закрыть меню"
+              onClick={() => setOpen(false)}
+              className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            />
+
+            {/* panel: без translate, чтобы не уезжало */}
+            <motion.div
+              className="fixed inset-x-3 top-3 z-[70] rounded-3xl border border-white/10 bg-brand-dark/95 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.7)] backdrop-blur"
+              initial={{ opacity: 0, y: -10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-white/90">Меню</div>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/90 hover:bg-white/10"
+                  aria-label="Закрыть"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="mt-4 grid gap-2 text-center">
+                {nav.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setOpen(false)}
+                    className={({ isActive }) =>
+                      [
+                        "rounded-xl border px-4 py-3 text-sm font-semibold transition",
+                        isActive
+                          ? "border-brand-accent/40 bg-white/10 text-white"
+                          : "border-white/10 bg-white/5 text-white/90 hover:bg-white/10",
+                      ].join(" ")
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+
+              <div className="mt-4 grid gap-2 text-center">
+                <a
+                  href="tel:+79181606585"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white/90"
+                >
+                  <PhoneCall size={16} />
+                  +7 (918) 160-65-85
+                </a>
+
+                <a
+                  href="https://t.me/International_trading_rus"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-blue to-brand-accent px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-accent/20 transition hover:opacity-95"
+                >
+                  <Send size={16} />
+                  Telegram
+                </a>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </>
+  )
+}
