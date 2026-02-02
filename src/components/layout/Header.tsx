@@ -28,6 +28,8 @@ export default function Header() {
     return () => ro.disconnect()
   }, [])
 
+
+  {/* deploy refresh */}
   // прогресс скролла
   useEffect(() => {
     const onScroll = () => {
