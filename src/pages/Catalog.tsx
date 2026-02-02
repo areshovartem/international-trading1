@@ -10,6 +10,7 @@ import { CarListItem } from "../components/catalog/CarListItem"
 import Reveal from "../components/Reveal"
 import { Stagger, StaggerItem } from "../components/Stagger"
 import { createPortal } from "react-dom"
+import { ALL_BRANDS } from "../data/brands"
 
 
 type SortKey = "default" | "price_asc" | "price_desc" | "year_desc" | "mileage_asc"
@@ -31,13 +32,17 @@ type Filters = {
   condition: "" | NonNullable<Car["condition"]>
   brand: string
   model: string
-  generation: string
   body: string
   transmission: string
   fuel: string
   drive: string
   minVol: number | ""
   maxVol: number | ""
+    onlyNew: boolean
+  onlyDiscount: boolean
+  onlyPromo: boolean
+
+
 }
 
 const emptyFilters: Filters = {
@@ -53,14 +58,33 @@ const emptyFilters: Filters = {
   condition: "",
   brand: "",
   model: "",
-  generation: "",
   body: "",
   transmission: "",
   fuel: "",
   drive: "",
   minVol: "",
   maxVol: "",
+    onlyNew: false,
+  onlyDiscount: false,
+  onlyPromo: false,
+
+
 }
+
+
+export function fmtNum(v: number | string | ""): string {
+  const n =
+    typeof v === "number"
+      ? v
+      : typeof v === "string"
+      ? Number(v.replace(/\s/g, ""))
+      : NaN
+
+  if (!Number.isFinite(n)) return "" // 👈 если буквы / пусто / мусор
+
+  return n.toLocaleString("ru-RU") // 200 000 / 1 680 000
+}
+
 
 export default function Catalog() {
   const [draft, setDraft] = useState<Filters>(emptyFilters)
@@ -77,9 +101,9 @@ useEffect(() => {
 
 const options = useMemo(() => {
   return {
-    brands: uniq(carsList.map((c) => c.brand)),
+    brands: ALL_BRANDS,
+
     models: uniq(carsList.map((c) => c.model)),
-    generations: uniq(carsList.map((c) => c.generation)),
     bodies: uniq(carsList.map((c) => c.body)),
     transmissions: uniq(carsList.map((c) => c.transmission)),
     fuels: uniq(carsList.map((c) => c.fuel)),
@@ -113,6 +137,11 @@ function filterCars(f: Filters) {
   const qq = f.q.trim().toLowerCase()
 
   return carsList.filter((c) => {
+    const okOnlyNew = !f.onlyNew || c.condition === "Новые"
+const okDiscount = !f.onlyDiscount || Boolean((c as any).discount)
+const okPromo = !f.onlyPromo || Boolean((c as any).promo)
+
+
     const okQ =
       !qq ||
       c.title.toLowerCase().includes(qq) ||
@@ -134,7 +163,6 @@ function filterCars(f: Filters) {
     const okCond = !f.condition || c.condition === f.condition
     const okBrand = !f.brand || c.brand === f.brand
     const okModel = !f.model || c.model === f.model
-    const okGen = !f.generation || c.generation === f.generation
     const okBody = !f.body || c.body === f.body
     const okTr = !f.transmission || c.transmission === f.transmission
     const okFuel = !f.fuel || c.fuel === f.fuel
@@ -152,12 +180,15 @@ function filterCars(f: Filters) {
       okCond &&
       okBrand &&
       okModel &&
-      okGen &&
       okBody &&
       okTr &&
       okFuel &&
       okDrive &&
       okVol
+        && okOnlyNew
+  && okDiscount
+  && okPromo
+
     )
   })
 }
@@ -330,14 +361,7 @@ className={[
               />
             </StaggerItem>
 
-            <StaggerItem className="lg:col-span-2">
-              <FancySelect
-                value={draft.generation}
-                onChange={(v) => setDraft((s) => ({ ...s, generation: v }))}
-                placeholder="Поколение"
-                options={options.generations}
-              />
-            </StaggerItem>
+
 
             <StaggerItem className="lg:col-span-2">
               <FancySelect
@@ -384,16 +408,76 @@ className={[
               />
             </StaggerItem>
 
-            <StaggerItem className="lg:col-span-2">
-              <RangeField
-                leftPlaceholder="Объём от"
-                rightPlaceholder="до"
-                leftValue={draft.minVol}
-                rightValue={draft.maxVol}
-                onLeftChange={(v) => setDraft((s) => ({ ...s, minVol: v }))}
-                onRightChange={(v) => setDraft((s) => ({ ...s, maxVol: v }))}
-              />
-            </StaggerItem>
+            
+
+<StaggerItem className="lg:col-span-6">
+<div className="
+  grid h-12 grid-cols-3 items-center
+  rounded-2xl border border-white/10 bg-white/5 px-4
+">
+  {/* Только новые */}
+  <label className="flex items-center justify-center gap-3 text-sm text-white/85 whitespace-nowrap cursor-pointer">
+    <input
+      type="checkbox"
+      checked={draft.onlyNew}
+      onChange={(e) =>
+        setDraft((s) => ({ ...s, onlyNew: e.target.checked }))
+      }
+      className="peer hidden"
+    />
+    <span className="h-5 w-5 rounded-md border border-white/25 flex items-center justify-center peer-checked:bg-white peer-checked:border-white">
+      <span className="h-2.5 w-2.5 rounded-sm bg-black opacity-0 peer-checked:opacity-100" />
+    </span>
+    Только новые
+  </label>
+
+  {/* Со скидкой */}
+  <label className="flex items-center justify-center gap-3 text-sm text-white/85 whitespace-nowrap cursor-pointer">
+    <input
+      type="checkbox"
+      checked={draft.onlyDiscount}
+      onChange={(e) =>
+        setDraft((s) => ({ ...s, onlyDiscount: e.target.checked }))
+      }
+      className="peer hidden"
+    />
+    <span className="h-5 w-5 rounded-md border border-white/25 flex items-center justify-center peer-checked:bg-white peer-checked:border-white">
+      <span className="h-2.5 w-2.5 rounded-sm bg-black opacity-0 peer-checked:opacity-100" />
+    </span>
+    Со скидкой
+  </label>
+
+  {/* Акции */}
+  <label className="flex items-center justify-center gap-3 text-sm text-white/85 whitespace-nowrap cursor-pointer">
+    <input
+      type="checkbox"
+      checked={draft.onlyPromo}
+      onChange={(e) =>
+        setDraft((s) => ({ ...s, onlyPromo: e.target.checked }))
+      }
+      className="peer hidden"
+    />
+    <span className="h-5 w-5 rounded-md border border-white/25 flex items-center justify-center peer-checked:bg-white peer-checked:border-white">
+      <span className="h-2.5 w-2.5 rounded-sm bg-black opacity-0 peer-checked:opacity-100" />
+    </span>
+    Акции
+  </label>
+</div>
+
+</StaggerItem>
+
+<StaggerItem className="lg:col-span-4">
+  <RangeField
+    leftPlaceholder={`Цена от (${fmtNum(stats.minP)})`}
+    rightPlaceholder={`до (${fmtNum(stats.maxP)})`}
+    leftValue={draft.minPrice}
+    rightValue={draft.maxPrice}
+    onLeftChange={(v) => setDraft((s) => ({ ...s, minPrice: v }))}
+    onRightChange={(v) => setDraft((s) => ({ ...s, maxPrice: v }))}
+  />
+</StaggerItem>
+
+
 
             <StaggerItem className="lg:col-span-4">
               <RangeField
@@ -417,16 +501,6 @@ className={[
               />
             </StaggerItem>
 
-            <StaggerItem className="lg:col-span-4">
-              <RangeField
-                leftPlaceholder={`Цена от (${stats.minP})`}
-                rightPlaceholder={`до (${stats.maxP})`}
-                leftValue={draft.minPrice}
-                rightValue={draft.maxPrice}
-                onLeftChange={(v) => setDraft((s) => ({ ...s, minPrice: v }))}
-                onRightChange={(v) => setDraft((s) => ({ ...s, maxPrice: v }))}
-              />
-            </StaggerItem>
           </Stagger>
         </div>
       </Reveal>
@@ -637,6 +711,12 @@ className={[
 }
 
 
+function parseNumInput(s: string): number | "" {
+  const v = s.replace(/[^\d]/g, "") // оставляем только цифры
+  if (!v) return ""
+  const n = Number(v)
+  return Number.isFinite(n) ? n : ""
+}
 
 function RangeField({
   className,
@@ -659,16 +739,27 @@ function RangeField({
     <div className={className}>
       <div className="flex h-12 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
         <input
-          value={leftValue}
-          onChange={(e) => onLeftChange(e.target.value ? Number(e.target.value) : "")}
+         value={leftValue === "" ? "" : fmtNum(leftValue)}
+onChange={(e) => {
+  const raw = e.target.value.replace(/[^\d]/g, "") // убрали пробелы и всё лишнее
+  onLeftChange(raw ? Number(raw) : "")
+}}
+
+
+
           placeholder={leftPlaceholder}
           className="w-1/2 bg-transparent px-4 text-sm text-white placeholder:text-white/35 outline-none focus:ring-0"
           inputMode="numeric"
         />
         <div className="w-px bg-white/10" />
         <input
-          value={rightValue}
-          onChange={(e) => onRightChange(e.target.value ? Number(e.target.value) : "")}
+          value={rightValue === "" ? "" : fmtNum(rightValue)}
+onChange={(e) => {
+  const raw = e.target.value.replace(/[^\d]/g, "")
+  onRightChange(raw ? Number(raw) : "")
+}}
+
+
           placeholder={rightPlaceholder}
           className="w-1/2 bg-transparent px-4 text-sm text-white placeholder:text-white/35 outline-none focus:ring-0"
           inputMode="numeric"

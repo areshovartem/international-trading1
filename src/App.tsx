@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { HashRouter, Routes, Route } from "react-router-dom"
 import Layout from "./components/layout/Layout"
 import Home from "./pages/Home"
 import Catalog from "./pages/Catalog"
@@ -8,14 +8,13 @@ import Calculator from "./pages/Calculator"
 import ScrollToTop from "./components/ScrollToTop"
 import About from "./pages/About"
 import AdminCars from "./pages/AdminCars"
-
-
+import CursorGlow from "./components/CursorGlow"
 
 export default function App() {
   return (
-    <BrowserRouter>
-      {/* 👇 ВОТ ЭТА СТРОКА ОБЯЗАТЕЛЬНА */}
+    <HashRouter>
       <ScrollToTop />
+      <CursorGlow />
 
       <Routes>
         <Route element={<Layout />}>
@@ -27,17 +26,17 @@ export default function App() {
           <Route path="/about" element={<About />} />
           <Route path="/admin" element={<AdminCars />} />
 
+          <Route
+            path="*"
+            element={
+              <div className="mx-auto max-w-6xl px-6 py-10 text-white/70">
+                Страница не найдена
+              </div>
+            }
+          />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
 
-<Route
-  path="*"
-  element={
-    <div className="mx-auto max-w-6xl px-6 py-10 text-white/70">
-      Страница не найдена
-    </div>
-  }
-/>

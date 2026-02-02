@@ -8,6 +8,9 @@ import { Stagger, StaggerItem } from "../Stagger" // ⚠️ путь прове�
 import { cars } from "../../data/cars" // ⚠️ путь проверь
 import carsImg from "../../assets/cars.png"
 import carCardImg from "../../assets/porsche.jpg"
+import promoVideo from "../../assets/video/promo.mp4"
+
+
 import { Play } from "lucide-react"
 
 
@@ -64,8 +67,9 @@ export default function Hero() {
           
         <Reveal>
           <div className="mx-auto max-w-4xl text-center">
-            <h1 className="text-4xl font-extrabold tracking-tight md:text-6xl">
+            <h1 className="mt-[10px] text-4xl font-extrabold tracking-tight md:mt-0 md:text-6xl">
   <span className="block text-white">ДОСТАВКА АВТО</span>
+
 
               <span className="mt-2 block text-3xl md:text-5xl font-semibold text-brand-blue/100">
                 ИЗ КОРЕИ И КИТАЯ
@@ -130,10 +134,10 @@ export default function Hero() {
           h-auto
           object-contain
           select-none
-          max-h-[220px]
-          sm:max-h-[320px]
-          md:max-h-[420px]
-          lg:max-h-[460px]
+          max-h-[230px]
+          sm:max-h-[330px]
+          md:max-h-[430px]
+          lg:max-h-[470px]
         "
         draggable={false}
       />
@@ -180,6 +184,8 @@ export default function Hero() {
             </div>
           </div>
         </Reveal>
+
+        
 
         <Reveal delay={0.08}>
 <div
@@ -322,7 +328,8 @@ export default function Hero() {
             </div>
 
             <div className="overflow-hidden rounded-3xl border border-white/10 bg-black/40 shadow-[0_40px_140px_rgba(0,0,0,0.8)]">
-              <PrettyVideo src="/video/promo.mp4" />
+              <PrettyVideo src={promoVideo} />
+
             </div>
 
             <div className="mt-3 text-xs text-white/50">

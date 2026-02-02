@@ -1,26 +1,67 @@
 // src/components/catalog/CarListItem.tsx
 import { Link } from "react-router-dom"
 import type { Car } from "../../data/cars"
+import { useMemo, useState } from "react"
+
+function HoverPreview({ images, alt }: { images: string[]; alt: string }) {
+  const imgs = useMemo(() => (images ?? []).filter(Boolean).slice(0, 5), [images])
+  const [idx, setIdx] = useState(0)
+
+  const current = imgs[idx] ?? imgs[0]
+
+  return (
+    <div
+  className="relative h-full w-full"
+  onMouseLeave={() => setIdx(0)}
+>
+
+      <img src={current} alt={alt} className="h-full w-full object-cover" draggable={false} />
+
+      {/* зоны наведения только на md+, чтобы мобилка не ломалась */}
+      {imgs.length > 1 ? (
+        <div
+          className="absolute inset-0 hidden md:grid"
+          style={{ gridTemplateColumns: `repeat(${imgs.length}, 1fr)` }}
+        >
+          {imgs.map((_, i) => (
+            <div key={i} onMouseEnter={() => setIdx(i)} className="h-full" />
+          ))}
+        </div>
+      ) : null}
+
+      {/* тонкие индикаторы снизу */}
+      {imgs.length > 1 ? (
+        <div className="absolute inset-x-3 bottom-3 hidden md:flex gap-1.5">
+          {imgs.map((_, i) => (
+            <div
+              key={i}
+              className={[
+                "h-[2px] flex-1 rounded-full",
+                i === idx ? "bg-white/80" : "bg-white/25",
+              ].join(" ")}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 
 function fmt(n: number) {
   return n.toLocaleString("ru-RU")
 }
 
+
 export function CarListItem({ car }: { car: Car }) {
-  const img = car.images?.[0]
 
   return (
     <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] transition hover:border-white/20">
       <div className="grid gap-4 md:grid-cols-[260px_1fr]">
         {/* left: image */}
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-          <div className="relative aspect-[4/3] w-full">
-            {img ? (
-              <img src={img} alt={car.title} className="h-full w-full object-cover" />
-            ) : (
-              <div className="h-full w-full bg-white/5" />
-            )}
-          </div>
+<HoverPreview images={car.images ?? []} alt={car.title} />
+
         </div>
 
         {/* right: content */}
@@ -63,9 +104,11 @@ export function CarListItem({ car }: { car: Car }) {
             {/* price (слева) */}
             <div className="text-left">
               <div className="text-xs text-white/50">Под ключ в РФ</div>
-              <div className="mt-1 inline-flex rounded-2xl border border-white/10 bg-emerald-400/10 px-4 py-2 text-lg font-extrabold text-white">
-                {fmt(car.priceRub)} ₽
-              </div>
+              <div className="mt-1 flex min-w-[200px] justify-center rounded-2xl border border-white/15 bg-gradient-to-br from-emerald-400/20 to-emerald-400/5 px-7 py-3 text-lg font-extrabold text-white">
+  {fmt(car.priceRub)} ₽
+</div>
+
+
               <div className="mt-2 text-xs text-white/60">
                 {car.year} • {fmt(car.mileageKm)} км
                 {car.deliveryDays ? <> • доставка {car.deliveryDays} дн.</> : null}

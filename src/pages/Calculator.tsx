@@ -1,8 +1,10 @@
 // src/pages/Calculator.tsx
-import { useMemo, useState, type ReactNode } from "react"
+import { useEffect, useMemo, useState, type ReactNode } from "react"
 
 import Reveal from "../components/Reveal"
 import { Stagger, StaggerItem } from "../components/Stagger"
+import { useCbrRates } from "../lib/useCbrRates"
+
 
 function cx(...s: (string | false | undefined)[]) {
   return s.filter(Boolean).join(" ")
@@ -15,11 +17,23 @@ type UtilMode = "benefit" | "table" | "custom"
 function fmt(n: number) {
   return n.toLocaleString("ru-RU")
 }
+function formatNumberInput(raw: string) {
+  const digits = raw.replace(/\D+/g, "")
+  return digits ? Number(digits).toLocaleString("ru-RU") : ""
+}
+
+
 
 function clampNum(v: string, fallback = 0) {
-  const x = Number(String(v).replace(",", ".").trim())
+  const cleaned = String(v)
+    .replace(/\s+/g, "") // ← ВАЖНО: убираем пробелы
+    .replace(",", ".")
+    .trim()
+
+  const x = Number(cleaned)
   return Number.isFinite(x) ? x : fallback
 }
+
 
 const UTIL_BASE = 20000
 
@@ -126,9 +140,15 @@ function calcUtilRub2026(params: { cc: number; hp: number; age: AgeGroup }) {
 }
 
 export default function Calculator() {
+  const { rates: cbr, loading: cbrLoading, error: cbrError, date: cbrDate } = useCbrRates()
+
+  const [ratesDirty, setRatesDirty] = useState(false)
+
+  
   // ---- INPUTS (пустые по умолчанию)
   const [price, setPrice] = useState("")
   const [currency, setCurrency] = useState<Currency>("RUB")
+  
 
   const [age, setAge] = useState<AgeGroup>("3to5")
   const [engineCc, setEngineCc] = useState("")
@@ -140,6 +160,18 @@ export default function Calculator() {
     KRW: 0.07,
     CNY: 13,
   })
+    useEffect(() => {
+    if (!cbr) return
+    if (ratesDirty) return
+
+    setRates({
+      USD: Number(cbr.USD.toFixed(4)),
+      EUR: Number(cbr.EUR.toFixed(4)),
+      KRW: Number(cbr.KRW.toFixed(6)),
+      CNY: Number(cbr.CNY.toFixed(4)),
+    })
+  }, [cbr, ratesDirty])
+
 
   const [utilMode, setUtilMode] = useState<UtilMode>("benefit")
   const [utilCustom, setUtilCustom] = useState("")
@@ -226,14 +258,27 @@ export default function Calculator() {
 
     const benefitEligible = hasHp && hasEngine && hp <= 160 && cc <= 3000
 
-    let utilRub = 0
-    if (utilMode === "custom") {
-      utilRub = clampNum(utilCustom, 0)
-    } else if (utilMode === "benefit") {
-      utilRub = benefitEligible ? (age === "lt3" ? 3400 : 5200) : 0
-    } else {
-      utilRub = hasHp && hasEngine ? calcUtilRub2026({ cc, hp, age }) : 0
-    }
+   // ... после benefitEligible
+let utilRub = 0
+let utilReason = ""
+
+if (utilMode === "custom") {
+  utilRub = clampNum(utilCustom, 0)
+  utilReason = "утиль вручную"
+} else if (utilMode === "benefit") {
+  if (benefitEligible) {
+    utilRub = age === "lt3" ? 3400 : 5200
+    utilReason = "льготный утиль"
+  } else {
+    utilRub = hasHp && hasEngine ? calcUtilRub2026({ cc, hp, age }) : 0
+    utilReason = "льгота не подходит → утиль по таблице"
+  }
+} else {
+  utilRub = hasHp && hasEngine ? calcUtilRub2026({ cc, hp, age }) : 0
+  utilReason = "утиль по таблице"
+}
+
+
 
     const feeRub = clampNum(customsFeeRub, 0)
     const extra = clampNum(extraRub, 0)
@@ -249,6 +294,7 @@ export default function Calculator() {
       dutyEur,
       dutyRub,
       utilRub,
+      utilReason,
       benefitEligible,
       feeRub,
       extra,
@@ -322,12 +368,14 @@ export default function Calculator() {
             <Stagger className="mt-6 grid gap-4 md:grid-cols-2" delay={0.05}>
               <StaggerItem>
                 <Field label="Цена авто">
-                  <input
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className={inputCls}
-                    placeholder="Напр. 2500000"
-                  />
+<input
+  value={price}
+  onChange={(e) => setPrice(formatNumberInput(e.target.value))}
+  inputMode="numeric"
+  className={inputCls}
+  placeholder="Напр. 20 000 000"
+/>
+
                 </Field>
               </StaggerItem>
 
@@ -366,33 +414,39 @@ export default function Calculator() {
               <StaggerItem>
                 <Field label="Объём двигателя (см³)">
                   <input
-                    value={engineCc}
-                    onChange={(e) => setEngineCc(e.target.value)}
-                    className={inputCls}
-                    placeholder="Напр. 1998"
-                  />
+  value={engineCc}
+  onChange={(e) => setEngineCc(formatNumberInput(e.target.value))}
+  inputMode="numeric"
+  className={inputCls}
+  placeholder="Напр. 2 000"
+/>
+
                 </Field>
               </StaggerItem>
 
               <StaggerItem>
                 <Field label="Мощность (л.с.)">
                   <input
-                    value={powerHp}
-                    onChange={(e) => setPowerHp(e.target.value)}
-                    className={inputCls}
-                    placeholder="Напр. 150"
-                  />
+  value={powerHp}
+  onChange={(e) => setPowerHp(formatNumberInput(e.target.value))}
+  inputMode="numeric"
+  className={inputCls}
+  placeholder="Напр. 150"
+/>
+
                 </Field>
               </StaggerItem>
 
               <StaggerItem className="md:col-span-2">
                 <Field label="Доп. расходы (логистика/услуги), ₽">
                   <input
-                    value={extraRub}
-                    onChange={(e) => setExtraRub(e.target.value)}
-                    className={inputCls}
-                    placeholder="Напр. 0"
-                  />
+  value={extraRub}
+  onChange={(e) => setExtraRub(formatNumberInput(e.target.value))}
+  inputMode="numeric"
+  className={inputCls}
+  placeholder="Напр. 100 000"
+/>
+
                 </Field>
               </StaggerItem>
             </Stagger>
@@ -400,6 +454,29 @@ export default function Calculator() {
             <Reveal delay={0.04}>
 <div className="mt-6 rounded-3xl border border-white/10 bg-black/20 p-4">
                 <div className="text-center text-sm font-semibold text-white">Курсы валют</div>
+                <div className="mt-1 text-center text-[11px] text-white/50">
+  {cbrLoading
+    ? "Загружается курс ЦБ…"
+    : cbrError
+    ? "Ошибка получения курса ЦБ"
+    : cbrDate
+    ? `Курс ЦБ РФ: ${cbrDate}`
+    : null}
+</div>
+
+{ratesDirty && (
+  <div className="mt-1 text-center text-[11px] text-amber-300">
+    Курсы изменены вручную —
+    <button
+      type="button"
+      className="ml-1 underline"
+      onClick={() => setRatesDirty(false)}
+    >
+      вернуть ЦБ
+    </button>
+  </div>
+)}
+
 <div className="mt-1 text-center text-xs text-white/55">Укажите, сколько ₽ стоит 1 единица валюты.</div>
 
 
@@ -408,9 +485,11 @@ export default function Calculator() {
                     <SmallField label="USD → RUB">
                       <input
                         value={String(rates.USD)}
-                        onChange={(e) =>
-                          setRates((p) => ({ ...p, USD: clampNum(e.target.value, p.USD) }))
-                        }
+                        onChange={(e) => {
+  setRatesDirty(true)
+  setRates((p) => ({ ...p, USD: clampNum(e.target.value, p.USD) }))
+}}
+
                         className={inputCls}
                       />
                     </SmallField>
@@ -419,9 +498,11 @@ export default function Calculator() {
                     <SmallField label="EUR → RUB">
                       <input
                         value={String(rates.EUR)}
-                        onChange={(e) =>
-                          setRates((p) => ({ ...p, EUR: clampNum(e.target.value, p.EUR) }))
-                        }
+                        onChange={(e) => {
+  setRatesDirty(true)
+  setRates((p) => ({ ...p, EUR: clampNum(e.target.value, p.EUR) }))
+}}
+
                         className={inputCls}
                       />
                     </SmallField>
@@ -430,9 +511,11 @@ export default function Calculator() {
                     <SmallField label="KRW → RUB">
                       <input
                         value={String(rates.KRW)}
-                        onChange={(e) =>
-                          setRates((p) => ({ ...p, KRW: clampNum(e.target.value, p.KRW) }))
-                        }
+                        onChange={(e) => {
+  setRatesDirty(true)
+  setRates((p) => ({ ...p, KRW: clampNum(e.target.value, p.KRW) }))
+}}
+
                         className={inputCls}
                       />
                     </SmallField>
@@ -441,9 +524,11 @@ export default function Calculator() {
                     <SmallField label="CNY → RUB">
                       <input
                         value={String(rates.CNY)}
-                        onChange={(e) =>
-                          setRates((p) => ({ ...p, CNY: clampNum(e.target.value, p.CNY) }))
-                        }
+                        onChange={(e) => {
+  setRatesDirty(true)
+  setRates((p) => ({ ...p, CNY: clampNum(e.target.value, p.CNY) }))
+}}
+
                         className={inputCls}
                       />
                     </SmallField>
@@ -452,78 +537,7 @@ export default function Calculator() {
               </div>
             </Reveal>
 
-            <Reveal delay={0.05}>
-<div className="mt-6 rounded-3xl border border-white/10 bg-black/20 p-4 text-center">
-                <div className="text-sm font-semibold text-white">Утильсбор</div>
-                <div className="mt-1 text-xs text-white/55">
-                  “Льготный” ориентир обычно применим для личного пользования при ≤160 л.с. и ≤3000 см³. Если мощность
-                  больше — используйте “по таблице” или “вручную”.
-                </div>
-
-<Stagger className="mt-4 grid grid-cols-3 gap-1.5 sm:gap-2" delay={0.02}>
-                  <StaggerItem>
-                    <Tab active={utilMode === "benefit"} onClick={() => setUtilMode("benefit")}>
-                      Льготный
-                    </Tab>
-                  </StaggerItem>
-                  <StaggerItem>
-                    <Tab active={utilMode === "table"} onClick={() => setUtilMode("table")}>
-                      По таблице
-                    </Tab>
-                  </StaggerItem>
-                  <StaggerItem>
-                    <Tab active={utilMode === "custom"} onClick={() => setUtilMode("custom")}>
-                      Вручную
-                    </Tab>
-                  </StaggerItem>
-                </Stagger>
-
-                {utilMode === "custom" ? (
-                  <Reveal delay={0.03}>
-                    <div className="mt-4">
-                      <SmallField label="Утильсбор, ₽">
-                        <input
-                          value={utilCustom}
-                          onChange={(e) => setUtilCustom(e.target.value)}
-className={cx(inputCls, "text-center")}
-                          placeholder="Напр. 3400"
-                        />
-                      </SmallField>
-                    </div>
-                  </Reveal>
-                ) : utilMode === "benefit" ? (
-                  <Reveal delay={0.03}>
-                    <div className="mt-4">
-                      {!calc.benefitEligible ? (
-                        <div className="rounded-2xl border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-xs text-amber-100/90">
-                          Льготный утиль не подходит по введённым данным (нужно ≤160 л.с. и ≤3000 см³). Выберите “По
-                          таблице” или “Вручную”.
-                        </div>
-                      ) : (
-                        <div className="text-sm text-white/80">
-                          Поставим ориентир:{" "}
-                          <span className="font-semibold text-white">
-                            {age === "lt3" ? "3 400 ₽" : "5 200 ₽"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </Reveal>
-                ) : (
-                  <Reveal delay={0.03}>
-                    <div className="mt-4 text-sm text-white/80">
-                      По таблице:{" "}
-                      <span className="font-semibold text-white">
-                        {calc.utilRub ? `${fmt(Math.round(calc.utilRub))} ₽` : "0 ₽"}
-                      </span>
-                      <div className="mt-1 text-[11px] text-white/50">
-                        Формула: 20 000 ₽ × коэффициент (по мощности/объёму/возрасту).
-                      </div>
-                    </div>
-                  </Reveal>
-                )}
-              </div>
-            </Reveal>
+            
 
             <Reveal delay={0.06}>
 <div className="mt-6 rounded-3xl border border-white/10 bg-black/20 p-4 text-center">
@@ -538,11 +552,13 @@ className={cx(inputCls, "text-center")}
     <div className="h-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
       <SmallField label="Сбор за операции, ₽">
         <input
-          value={customsFeeRub}
-          onChange={(e) => setCustomsFeeRub(e.target.value)}
-          className={inputCls}
-          placeholder="0"
-        />
+  value={customsFeeRub}
+  onChange={(e) => setCustomsFeeRub(formatNumberInput(e.target.value))}
+  inputMode="numeric"
+  className={inputCls}
+  placeholder="0"
+/>
+
       </SmallField>
     </div>
   </StaggerItem>
@@ -562,7 +578,7 @@ className={cx(inputCls, "text-center")}
 
         {/* RIGHT: results */}
         <StaggerItem>
-<div className="h-fit rounded-[32px] border border-white/10 bg-white/5 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-6 text-center">
+<div className="h-fit rounded-[32px] border border-white/10 bg-white/5 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.35)] md:p-6">
             <Reveal>
 <div className="text-center text-lg font-extrabold text-white">Итог</div>
 <div className="mt-1 text-center text-xs text-white/55">
@@ -587,29 +603,40 @@ className={cx(inputCls, "text-center")}
                 </StaggerItem>
 
                 <StaggerItem>
+  <Line
+  label="Пошлина"
+  value={
+    <div>
+      <div>{fmt(Math.round(calc.dutyRub))} ₽</div>
+      <div className="mt-0.5 text-[11px] font-normal text-white/45">
+        {fmt(Math.round(calc.dutyEur))} €
+      </div>
+    </div>
+  }
+  hint={
+    age === "lt3"
+      ? "До 3 лет: max(% от стоимости, минимум €/см³)"
+      : age === "3to5"
+      ? "3–5 лет: €/см³ по объёму"
+      : "Старше 5: €/см³ по объёму"
+  }
+/>
+
+</StaggerItem>
+
+
+                <StaggerItem>
                   <Line
-                    label="Пошлина (в €)"
-                    value={`${fmt(Math.round(calc.dutyEur))} €`}
-                    hint={
-                      age === "lt3"
-                        ? "До 3 лет: max(% от стоимости, минимум €/см³)"
-                        : age === "3to5"
-                        ? "3–5 лет: €/см³ по объёму"
-                        : "Старше 5: €/см³ по объёму"
-                    }
-                  />
+  label="Утильсбор"
+  value={`${fmt(Math.round(calc.utilRub))} ₽`}
+  hint={calc.utilReason}
+/>
+
                 </StaggerItem>
 
                 <StaggerItem>
-                  <Line label="Пошлина (в ₽)" value={`${fmt(Math.round(calc.dutyRub))} ₽`} />
-                </StaggerItem>
+<Line label="Сборы" value={`${fmt(Math.round(calc.feeRub))} ₽`} />
 
-                <StaggerItem>
-                  <Line label="Утильсбор" value={`${fmt(Math.round(calc.utilRub))} ₽`} />
-                </StaggerItem>
-
-                <StaggerItem>
-                  <Line label="Сборы" value={`${fmt(Math.round(calc.feeRub))} ₽`} />
                 </StaggerItem>
 
                 <StaggerItem>
@@ -700,17 +727,6 @@ function Tab({
 }
 
 
-function Line({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-      <div>
-        <div className="text-xs text-white/55">{label}</div>
-        {hint ? <div className="mt-1 text-[11px] text-white/40">{hint}</div> : null}
-      </div>
-      <div className="text-sm font-semibold text-white">{value}</div>
-    </div>
-  )
-}
 
 function FAQ() {
   const items = [
@@ -774,3 +790,25 @@ className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
 }
 const inputCls =
   "h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-center text-sm text-white placeholder:text-white/35 outline-none transition focus:border-brand-blue"
+
+function Line({
+  label,
+  value,
+  hint,
+}: {
+  label: string
+  value: ReactNode
+  hint?: ReactNode
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+      <div className="text-left">
+        <div className="text-xs text-white/55">{label}</div>
+        {hint ? <div className="mt-1 text-[11px] text-white/40">{hint}</div> : null}
+      </div>
+
+      {/* ВАЖНО: здесь задаём единый стиль значения */}
+      <div className="text-right text-sm font-semibold text-white">{value}</div>
+    </div>
+  )
+}

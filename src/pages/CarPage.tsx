@@ -11,10 +11,11 @@ export default function CarPage() {
   const { id } = useParams()
   const navigate = useNavigate()
 
-  const car = useMemo(() => {
-    const num = Number(id)
-    return cars.find((c) => c.id === num)
-  }, [id])
+const car = useMemo(() => {
+  if (!id) return undefined
+  return cars.find((c) => String(c.id) === String(id))
+}, [id])
+
 
   const [active, setActive] = useState(0)
 
@@ -227,7 +228,8 @@ export default function CarPage() {
 
       {/* Lightbox modal */}
       {lightboxOpen && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center px-4 py-6">
+  <div className="fixed inset-0 z-[300] flex items-start justify-center px-4 pt-6 pb-6">
+
           <button
             type="button"
             className="absolute inset-0 bg-black/85 backdrop-blur-sm"

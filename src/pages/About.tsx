@@ -5,6 +5,8 @@ import logo from "../assets/logo.png"
 import Reveal from "../components/Reveal"
 import { Stagger, StaggerItem } from "../components/Stagger"
 import React from "react"
+import VideosCarousel from "../components/home/VideosCarousel"
+
 
 
 
@@ -80,15 +82,43 @@ type ClientMedia =
   | { type: "image"; src: string; title: string }
   | { type: "video"; src: string; title: string; poster?: string }
 
+const base = import.meta.env.BASE_URL
+
 const clientsMedia: ClientMedia[] = [
-  // ✅ ЗАМЕНИ на свои пути (фото/видео)
-  { type: "image", src: "/src/assets/clients/1.jpg", title: "Выдача авто — Владивосток" },
-  { type: "image", src: "/src/assets/clients/2.jpg", title: "Клиент забрал авто — Москва" },
-  { type: "video", src: "/src/assets/clients/1.mov", poster: "/src/assets/clients/1-poster.png", title: "Видео выдачи — BMW" },
-  { type: "image", src: "/src/assets/clients/3.jpg", title: "Выдача — Санкт-Петербург" },
-  { type: "video", src: "/src/assets/clients/2.mp4", poster: "/src/assets/clients/2-poster.png", title: "Видео — получение авто" },
-  { type: "image", src: "/src/assets/clients/4.jpg", title: "Клиент и авто — Китай" },
+  {
+    type: "image",
+    src: `${base}clients/1.jpg`,
+    title: "Выдача авто — Владивосток",
+  },
+  {
+    type: "image",
+    src: `${base}clients/2.jpg`,
+    title: "Клиент забрал авто — Москва",
+  },
+  {
+    type: "video",
+    src: `${base}clients/1.mp4`,
+    poster: `${base}clients/1-poster.png`,
+    title: "Видео выдачи — BMW",
+  },
+  {
+    type: "image",
+    src: `${base}clients/3.jpg`,
+    title: "Выдача — Санкт-Петербург",
+  },
+  {
+    type: "video",
+    src: `${base}clients/2.mp4`,
+    poster: `${base}clients/2-poster.png`,
+    title: "Видео — получение авто",
+  },
+  {
+    type: "image",
+    src: `${base}clients/4.jpg`,
+    title: "Клиент и авто — Китай",
+  },
 ]
+
 
 function ClientsBlock() {
   const [open, setOpen] = React.useState<null | ClientMedia>(null)
@@ -466,6 +496,7 @@ export default function About() {
       {/* CLIENTS */}
       <ClientsBlock />
 
+
       {/* FAQ + CTA */}
       <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
         <Reveal>
@@ -537,6 +568,23 @@ export default function About() {
           </div>
         </Reveal>
       </div>
+      
+
+            {/* OUR VIDEOS */}
+{/* OUR VIDEOS */}
+<Reveal>
+  <div className="mt-10">
+    <VideosCarousel
+      items={[
+        { title: "Как мы выкупаем авто", youtubeId: "Slyp-IMGkB4" },
+        { title: "Доставка и логистика", youtubeId: "BBrkqsytbSA" },
+        { title: "Осмотр и проверка", youtubeId: "FN0zu2VpIwY" },
+      ]}
+    />
+  </div>
+</Reveal>
+
+
     </section>
   )
 }
