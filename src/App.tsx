@@ -18,20 +18,24 @@ import LoadingScreen from "./components/LoadingScreen"
 export function useAppVh() {
   useEffect(() => {
     const set = () => {
-      const h = window.visualViewport?.height ?? window.innerHeight;
-      document.documentElement.style.setProperty("--app-vh", `${h}px`);
-    };
+  const vv = window.visualViewport;
+  const h = vv ? vv.height : window.innerHeight;
+  document.documentElement.style.setProperty("--app-vh", `${h}px`);
+};
 
-    set();
-    window.addEventListener("resize", set);
-    window.visualViewport?.addEventListener("resize", set);
-    window.visualViewport?.addEventListener("scroll", set); // важно для iOS
+set();
+window.addEventListener("resize", set);
+window.addEventListener("orientationchange", set);
+window.visualViewport?.addEventListener("resize", set);
+window.visualViewport?.addEventListener("scroll", set);
 
-    return () => {
-      window.removeEventListener("resize", set);
-      window.visualViewport?.removeEventListener("resize", set);
-      window.visualViewport?.removeEventListener("scroll", set);
-    };
+return () => {
+  window.removeEventListener("resize", set);
+  window.removeEventListener("orientationchange", set);
+  window.visualViewport?.removeEventListener("resize", set);
+  window.visualViewport?.removeEventListener("scroll", set);
+};
+
   }, []);
 }
 

@@ -1,22 +1,24 @@
 import React from "react"
+import { createPortal } from "react-dom"
 
 export default function LoadingScreen({ visible }: { visible: boolean }) {
-  return (
+  return createPortal(
     <div
       className={[
-        "fixed inset-0 z-[9999] flex items-center justify-center bg-[#070B14]",
+        "fixed left-0 top-0 z-[99999] flex items-center justify-center bg-[#070B14]",
+        "w-[100vw]",
         "transition-all duration-700 ease-out",
         visible
           ? "opacity-100 scale-100 blur-0"
           : "opacity-0 scale-[1.12] blur-[14px] pointer-events-none",
       ].join(" ")}
-style={{
-  transformOrigin: "50% 40%",
-  height: "var(--app-vh, 100dvh)",   // ✅ правильно
-  paddingBottom: "env(safe-area-inset-bottom)",
-}}
-
-
+      style={{
+        // ключевое: высота от visualViewport через переменную
+        height: "var(--app-vh, 100dvh)",
+        transformOrigin: "50% 40%",
+        // на всякий: чтобы вообще ничто не влияло
+        margin: 0,
+      }}
     >
       <div className="w-full px-6 text-center">
         <div className="select-none">
@@ -52,6 +54,7 @@ style={{
             0 10px 25px rgba(0,0,0,0.65);
         }
       `}</style>
-    </div>
+    </div>,
+    document.body
   )
 }
