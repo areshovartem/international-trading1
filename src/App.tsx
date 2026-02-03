@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { HashRouter, Routes, Route } from "react-router-dom"
 import Layout from "./components/layout/Layout"
 import Home from "./pages/Home"
@@ -9,10 +10,38 @@ import ScrollToTop from "./components/ScrollToTop"
 import About from "./pages/About"
 import AdminCars from "./pages/AdminCars"
 import CursorGlow from "./components/CursorGlow"
+import LoadingScreen from "./components/LoadingScreen"
 
 export default function App() {
+  const [visible, setVisible] = useState(true)
+const [mounted, setMounted] = useState(true)
+
+useEffect(() => {
+  const MIN_MS = 1500
+  const FADE_MS = 900
+
+  const t1 = setTimeout(() => setVisible(false), MIN_MS)
+  const t2 = setTimeout(() => setMounted(false), MIN_MS + FADE_MS)
+
+  return () => {
+    clearTimeout(t1)
+    clearTimeout(t2)
+  }
+}, [])
+
+  const [showLoader, setShowLoader] = useState(true)
+
+  useEffect(() => {
+    const MIN_MS = 1500 // <-- тут меняй время (мс)
+
+    const t = setTimeout(() => setShowLoader(false), MIN_MS)
+    return () => clearTimeout(t)
+  }, [])
+
   return (
     <HashRouter>
+{mounted && <LoadingScreen visible={visible} />}
+
       <ScrollToTop />
       <CursorGlow />
 
@@ -25,7 +54,6 @@ export default function App() {
           <Route path="/calculator" element={<Calculator />} />
           <Route path="/about" element={<About />} />
           <Route path="/admin" element={<AdminCars />} />
-
           <Route
             path="*"
             element={
@@ -39,4 +67,3 @@ export default function App() {
     </HashRouter>
   )
 }
-

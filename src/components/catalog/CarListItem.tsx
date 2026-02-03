@@ -9,13 +9,17 @@ function HoverPreview({ images, alt }: { images: string[]; alt: string }) {
 
   const current = imgs[idx] ?? imgs[0]
 
-  return (
-    <div
-  className="relative h-full w-full"
-  onMouseLeave={() => setIdx(0)}
->
-
-      <img src={current} alt={alt} className="h-full w-full object-cover" draggable={false} />
+return (
+  <div
+    className="absolute inset-0"
+    onMouseLeave={() => setIdx(0)}
+  >
+    <img
+      src={current}
+      alt={alt}
+      className="h-full w-full object-cover"
+      draggable={false}
+    />
 
       {/* зоны наведения только на md+, чтобы мобилка не ломалась */}
       {imgs.length > 1 ? (
@@ -59,10 +63,11 @@ export function CarListItem({ car }: { car: Car }) {
     <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] transition hover:border-white/20">
       <div className="grid gap-4 md:grid-cols-[260px_1fr]">
         {/* left: image */}
-        <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-<HoverPreview images={car.images ?? []} alt={car.title} />
+{/* left: image */}
+<div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 aspect-[16/10]">
+  <HoverPreview images={car.images ?? []} alt={car.title} />
+</div>
 
-        </div>
 
         {/* right: content */}
         <div className="flex flex-col gap-3">
