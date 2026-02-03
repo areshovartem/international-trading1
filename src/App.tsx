@@ -12,7 +12,34 @@ import AdminCars from "./pages/AdminCars"
 import CursorGlow from "./components/CursorGlow"
 import LoadingScreen from "./components/LoadingScreen"
 
+
+
+
+export function useAppVh() {
+  useEffect(() => {
+    const set = () => {
+      const h = window.visualViewport?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty("--app-vh", `${h}px`);
+    };
+
+    set();
+    window.addEventListener("resize", set);
+    window.visualViewport?.addEventListener("resize", set);
+    window.visualViewport?.addEventListener("scroll", set); // важно для iOS
+
+    return () => {
+      window.removeEventListener("resize", set);
+      window.visualViewport?.removeEventListener("resize", set);
+      window.visualViewport?.removeEventListener("scroll", set);
+    };
+  }, []);
+}
+
+
 export default function App() {
+
+  useAppVh();
+
   const [visible, setVisible] = useState(true)
 const [mounted, setMounted] = useState(true)
 
