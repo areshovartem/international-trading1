@@ -10,9 +10,13 @@ export default function LoadingScreen({ visible }: { visible: boolean }) {
           ? "opacity-100 scale-100 blur-0"
           : "opacity-0 scale-[1.12] blur-[14px] pointer-events-none",
       ].join(" ")}
-      style={{ transformOrigin: "50% 40%" }}
+      style={{
+        transformOrigin: "50% 40%",
+        height: "100dvh", // ✅ iOS Safari
+        minHeight: "100svh", // ✅ fallback
+        paddingBottom: "env(safe-area-inset-bottom)", // ✅ чтобы не торчало снизу
+      }}
     >
-      {/* ВАЖНО: w-full, чтобы центр считался от экрана */}
       <div className="w-full px-6 text-center">
         <div className="select-none">
           <div className="font-extrabold text-white/95 drop-shadow-[0_10px_30px_rgba(0,0,0,0.6)]">
